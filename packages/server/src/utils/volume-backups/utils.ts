@@ -61,6 +61,29 @@ const getOrganizationId = (
 	return "";
 };
 
+const getProjectId = (
+	volumeBackup: Awaited<ReturnType<typeof findVolumeBackupById>>,
+): string | undefined => {
+	const services = [
+		volumeBackup.application,
+		volumeBackup.compose,
+		volumeBackup.postgres,
+		volumeBackup.mysql,
+		volumeBackup.mariadb,
+		volumeBackup.mongo,
+		volumeBackup.redis,
+		volumeBackup.libsql,
+	];
+
+	for (const service of services) {
+		if (service?.environment?.project?.projectId) {
+			return service.environment.project.projectId;
+		}
+	}
+
+	return undefined;
+};
+
 export const scheduleVolumeBackup = async (volumeBackupId: string) => {
 	const volumeBackup = await findVolumeBackupById(volumeBackupId);
 	scheduleJob(volumeBackupId, volumeBackup.cronExpression, async () => {
@@ -111,6 +134,7 @@ export const runVolumeBackup = async (volumeBackupId: string) => {
 	});
 	const projectName = getProjectName(volumeBackup);
 	const organizationId = getOrganizationId(volumeBackup);
+	const projectId = getProjectId(volumeBackup);
 	try {
 		const command = await backupVolume(volumeBackup);
 
@@ -141,6 +165,7 @@ export const runVolumeBackup = async (volumeBackupId: string) => {
 				serviceType: mappedServiceType,
 				type: "success",
 				organizationId,
+				projectId,
 			});
 		} catch (notificationError) {
 			console.error(
@@ -178,6 +203,7 @@ export const runVolumeBackup = async (volumeBackupId: string) => {
 				type: "error",
 				organizationId,
 				errorMessage: error instanceof Error ? error.message : String(error),
+				projectId,
 			});
 		} catch (notificationError) {
 			console.error(

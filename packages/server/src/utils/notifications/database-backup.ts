@@ -27,6 +27,7 @@ export const sendDatabaseBackupNotifications = async ({
 	errorMessage,
 	organizationId,
 	databaseName,
+	projectId,
 }: {
 	projectName: string;
 	applicationName: string;
@@ -35,6 +36,7 @@ export const sendDatabaseBackupNotifications = async ({
 	organizationId: string;
 	errorMessage?: string;
 	databaseName: string;
+	projectId?: string;
 }) => {
 	const date = new Date();
 	const unixDate = ~~(Number(date) / 1000);
@@ -56,10 +58,19 @@ export const sendDatabaseBackupNotifications = async ({
 			lark: true,
 			pushover: true,
 			teams: true,
+			notificationToProjects: true,
 		},
 	});
 
-	for (const notification of notificationList) {
+	const filteredNotifications = notificationList.filter((n) => {
+		if (n.notificationToProjects.length === 0) return true;
+		if (!projectId) return true;
+		return n.notificationToProjects.some(
+			(link) => link.projectId === projectId,
+		);
+	});
+
+	for (const notification of filteredNotifications) {
 		const {
 			email,
 			resend,

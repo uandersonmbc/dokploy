@@ -281,6 +281,7 @@ export const deployCompose = async ({
 			organizationId: compose.environment.project.organizationId,
 			domains: compose.domains,
 			environmentName: compose.environment.name,
+			projectId: compose.environment.project.projectId,
 		});
 	} catch (error) {
 		let command = "";
@@ -310,6 +311,7 @@ export const deployCompose = async ({
 			errorMessage: error?.message || "Error building",
 			buildLink,
 			organizationId: compose.environment.project.organizationId,
+			projectId: compose.environment.project.projectId,
 		});
 		throw error;
 	} finally {

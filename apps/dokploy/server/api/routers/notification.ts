@@ -484,6 +484,11 @@ export const notificationRouter = createTRPCRouter({
 				lark: true,
 				pushover: true,
 				teams: true,
+				notificationToProjects: {
+					with: {
+						project: true,
+					},
+				},
 			},
 			orderBy: desc(notifications.createdAt),
 			where: eq(notifications.organizationId, ctx.session.activeOrganizationId),

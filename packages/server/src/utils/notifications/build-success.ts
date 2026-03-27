@@ -28,6 +28,7 @@ interface Props {
 	organizationId: string;
 	domains: Domain[];
 	environmentName: string;
+	projectId?: string;
 }
 
 export const sendBuildSuccessNotifications = async ({
@@ -38,6 +39,7 @@ export const sendBuildSuccessNotifications = async ({
 	organizationId,
 	domains,
 	environmentName,
+	projectId,
 }: Props) => {
 	const date = new Date();
 	const unixDate = ~~(Number(date) / 1000);
@@ -59,10 +61,19 @@ export const sendBuildSuccessNotifications = async ({
 			lark: true,
 			pushover: true,
 			teams: true,
+			notificationToProjects: true,
 		},
 	});
 
-	for (const notification of notificationList) {
+	const filteredNotifications = notificationList.filter((n) => {
+		if (n.notificationToProjects.length === 0) return true;
+		if (!projectId) return true;
+		return n.notificationToProjects.some(
+			(link) => link.projectId === projectId,
+		);
+	});
+
+	for (const notification of filteredNotifications) {
 		const {
 			email,
 			resend,

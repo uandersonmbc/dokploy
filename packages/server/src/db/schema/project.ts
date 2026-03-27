@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { organization } from "./account";
 import { environments } from "./environment";
+import { notificationToProject } from "./notification";
 import { projectTags } from "./tag";
 
 export const projects = pgTable("project", {
@@ -27,6 +28,7 @@ export const projects = pgTable("project", {
 export const projectRelations = relations(projects, ({ many, one }) => ({
 	environments: many(environments),
 	projectTags: many(projectTags),
+	notificationToProjects: many(notificationToProject),
 	organization: one(organization, {
 		fields: [projects.organizationId],
 		references: [organization.id],

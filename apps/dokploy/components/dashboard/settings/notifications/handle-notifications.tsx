@@ -22,7 +22,9 @@ import {
 	TeamsIcon,
 	TelegramIcon,
 } from "@/components/icons/notification-icons";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
@@ -58,6 +60,7 @@ const notificationBaseSchema = z.object({
 	dokployRestart: z.boolean().default(false),
 	dockerCleanup: z.boolean().default(false),
 	serverThreshold: z.boolean().default(false),
+	projectIds: z.array(z.string()).optional().default([]),
 });
 
 export const notificationSchema = z.discriminatedUnion("type", [
@@ -243,6 +246,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 	const utils = api.useUtils();
 	const [visible, setVisible] = useState(false);
 	const { data: isCloud } = api.settings.isCloud.useQuery();
+	const { data: projects } = api.project.all.useQuery();
 
 	const { data: notification } = api.notification.one.useQuery(
 		{
@@ -349,6 +353,14 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 
 	useEffect(() => {
 		if (notification) {
+			const existingProjectIds =
+				"notificationToProjects" in notification
+					? (
+							notification.notificationToProjects as Array<{
+								projectId: string;
+							}>
+						).map((ntp) => ntp.projectId)
+					: [];
 			if (notification.notificationType === "slack") {
 				form.reset({
 					appBuildError: notification.appBuildError,
@@ -362,6 +374,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 					name: notification.name,
 					type: notification.notificationType,
 					serverThreshold: notification.serverThreshold,
+					projectIds: existingProjectIds,
 				});
 			} else if (notification.notificationType === "telegram") {
 				form.reset({
@@ -377,6 +390,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 					name: notification.name,
 					dockerCleanup: notification.dockerCleanup,
 					serverThreshold: notification.serverThreshold,
+					projectIds: existingProjectIds,
 				});
 			} else if (notification.notificationType === "discord") {
 				form.reset({
@@ -391,6 +405,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 					name: notification.name,
 					dockerCleanup: notification.dockerCleanup,
 					serverThreshold: notification.serverThreshold,
+					projectIds: existingProjectIds,
 				});
 			} else if (notification.notificationType === "email") {
 				form.reset({
@@ -409,6 +424,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 					name: notification.name,
 					dockerCleanup: notification.dockerCleanup,
 					serverThreshold: notification.serverThreshold,
+					projectIds: existingProjectIds,
 				});
 			} else if (notification.notificationType === "resend") {
 				form.reset({
@@ -424,6 +440,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 					name: notification.name,
 					dockerCleanup: notification.dockerCleanup,
 					serverThreshold: notification.serverThreshold,
+					projectIds: existingProjectIds,
 				});
 			} else if (notification.notificationType === "gotify") {
 				form.reset({
@@ -439,6 +456,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 					serverUrl: notification.gotify?.serverUrl,
 					name: notification.name,
 					dockerCleanup: notification.dockerCleanup,
+					projectIds: existingProjectIds,
 				});
 			} else if (notification.notificationType === "ntfy") {
 				form.reset({
@@ -455,6 +473,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 					name: notification.name,
 					dockerCleanup: notification.dockerCleanup,
 					serverThreshold: notification.serverThreshold,
+					projectIds: existingProjectIds,
 				});
 			} else if (notification.notificationType === "mattermost") {
 				form.reset({
@@ -470,6 +489,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 					name: notification.name,
 					dockerCleanup: notification.dockerCleanup,
 					serverThreshold: notification.serverThreshold,
+					projectIds: existingProjectIds,
 				});
 			} else if (notification.notificationType === "lark") {
 				form.reset({
@@ -483,6 +503,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 					dockerCleanup: notification.dockerCleanup,
 					volumeBackup: notification.volumeBackup,
 					serverThreshold: notification.serverThreshold,
+					projectIds: existingProjectIds,
 				});
 			} else if (notification.notificationType === "teams") {
 				form.reset({
@@ -496,6 +517,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 					name: notification.name,
 					dockerCleanup: notification.dockerCleanup,
 					serverThreshold: notification.serverThreshold,
+					projectIds: existingProjectIds,
 				});
 			} else if (notification.notificationType === "custom") {
 				form.reset({
@@ -517,6 +539,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 					volumeBackup: notification.volumeBackup,
 					dockerCleanup: notification.dockerCleanup,
 					serverThreshold: notification.serverThreshold,
+					projectIds: existingProjectIds,
 				});
 			} else if (notification.notificationType === "pushover") {
 				form.reset({
@@ -534,6 +557,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 					name: notification.name,
 					dockerCleanup: notification.dockerCleanup,
 					serverThreshold: notification.serverThreshold,
+					projectIds: existingProjectIds,
 				});
 			}
 		} else {
@@ -565,6 +589,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 			volumeBackup,
 			dockerCleanup,
 			serverThreshold,
+			projectIds,
 		} = data;
 		let promise: Promise<unknown> | null = null;
 		if (data.type === "slack") {
@@ -579,6 +604,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 				name: data.name,
 				dockerCleanup: dockerCleanup,
 				slackId: notification?.slackId || "",
+				projectIds,
 				notificationId: notificationId || "",
 				serverThreshold: serverThreshold,
 			});
@@ -596,6 +622,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 				dockerCleanup: dockerCleanup,
 				notificationId: notificationId || "",
 				telegramId: notification?.telegramId || "",
+				projectIds,
 				serverThreshold: serverThreshold,
 			});
 		} else if (data.type === "discord") {
@@ -611,6 +638,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 				dockerCleanup: dockerCleanup,
 				notificationId: notificationId || "",
 				discordId: notification?.discordId || "",
+				projectIds,
 				serverThreshold: serverThreshold,
 			});
 		} else if (data.type === "email") {
@@ -630,6 +658,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 				dockerCleanup: dockerCleanup,
 				notificationId: notificationId || "",
 				emailId: notification?.emailId || "",
+				projectIds,
 				serverThreshold: serverThreshold,
 			});
 		} else if (data.type === "resend") {
@@ -646,6 +675,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 				dockerCleanup: dockerCleanup,
 				notificationId: notificationId || "",
 				resendId: notification?.resendId || "",
+				projectIds,
 				serverThreshold: serverThreshold,
 			});
 		} else if (data.type === "gotify") {
@@ -663,6 +693,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 				decoration: data.decoration,
 				notificationId: notificationId || "",
 				gotifyId: notification?.gotifyId || "",
+				projectIds,
 			});
 		} else if (data.type === "ntfy") {
 			promise = ntfyMutation.mutateAsync({
@@ -679,6 +710,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 				dockerCleanup: dockerCleanup,
 				notificationId: notificationId || "",
 				ntfyId: notification?.ntfyId || "",
+				projectIds,
 			});
 		} else if (data.type === "mattermost") {
 			promise = mattermostMutation.mutateAsync({
@@ -694,6 +726,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 				dockerCleanup: dockerCleanup,
 				notificationId: notificationId || "",
 				mattermostId: notification?.mattermostId || "",
+				projectIds,
 				serverThreshold: serverThreshold,
 			});
 		} else if (data.type === "lark") {
@@ -708,6 +741,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 				dockerCleanup: dockerCleanup,
 				notificationId: notificationId || "",
 				larkId: notification?.larkId || "",
+				projectIds,
 				serverThreshold: serverThreshold,
 			});
 		} else if (data.type === "teams") {
@@ -722,6 +756,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 				dockerCleanup: dockerCleanup,
 				notificationId: notificationId || "",
 				teamsId: notification?.teamsId || "",
+				projectIds,
 				serverThreshold: serverThreshold,
 			});
 		} else if (data.type === "custom") {
@@ -750,6 +785,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 				serverThreshold: serverThreshold,
 				notificationId: notificationId || "",
 				customId: notification?.customId || "",
+				projectIds,
 			});
 		} else if (data.type === "pushover") {
 			if (data.priority === 2 && (data.retry == null || data.expire == null)) {
@@ -772,6 +808,7 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 				serverThreshold: serverThreshold,
 				notificationId: notificationId || "",
 				pushoverId: notification?.pushoverId || "",
+				projectIds,
 			});
 		}
 
@@ -1788,6 +1825,60 @@ export const HandleNotifications = ({ notificationId }: Props) => {
 								)}
 							</div>
 						</div>
+						<div className="flex flex-col gap-4">
+							<FormField
+								control={form.control}
+								name="projectIds"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel className="text-lg font-semibold leading-none tracking-tight">
+											Limit to Projects
+										</FormLabel>
+										<FormDescription>
+											Select specific projects to receive notifications. Leave
+											empty to send for all projects (organization-wide).
+										</FormDescription>
+										<div className="grid md:grid-cols-2 gap-2 mt-2">
+											{projects?.map((project) => (
+												<label
+													key={project.projectId}
+													className="flex items-center gap-2 rounded-lg border p-3 cursor-pointer hover:bg-accent"
+												>
+													<Checkbox
+														checked={field.value?.includes(
+															project.projectId,
+														)}
+														onCheckedChange={(checked) => {
+															const current = field.value || [];
+															if (checked) {
+																field.onChange([
+																	...current,
+																	project.projectId,
+																]);
+															} else {
+																field.onChange(
+																	current.filter(
+																		(id: string) =>
+																			id !== project.projectId,
+																	),
+																);
+															}
+														}}
+													/>
+													<span className="text-sm">{project.name}</span>
+												</label>
+											))}
+										</div>
+										{(!projects || projects.length === 0) && (
+											<p className="text-sm text-muted-foreground">
+												No projects found.
+											</p>
+										)}
+									</FormItem>
+								)}
+							/>
+						</div>
+
 						<div className="flex flex-col gap-4">
 							<FormLabel className="text-lg font-semibold leading-none tracking-tight">
 								Select the actions.

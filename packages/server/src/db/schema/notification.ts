@@ -6,11 +6,13 @@ import {
 	pgEnum,
 	pgTable,
 	text,
+	unique,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { organization } from "./account";
+import { projects } from "./project";
 
 export const notificationType = pgEnum("notificationType", [
 	"slack",
@@ -205,7 +207,43 @@ export const teams = pgTable("teams", {
 	webhookUrl: text("webhookUrl").notNull(),
 });
 
-export const notificationsRelations = relations(notifications, ({ one }) => ({
+export const notificationToProject = pgTable(
+	"notification_to_project",
+	{
+		id: text("id")
+			.primaryKey()
+			.$defaultFn(() => nanoid()),
+		notificationId: text("notificationId")
+			.notNull()
+			.references(() => notifications.notificationId, { onDelete: "cascade" }),
+		projectId: text("projectId")
+			.notNull()
+			.references(() => projects.projectId, { onDelete: "cascade" }),
+	},
+	(table) => ({
+		uniqueNotificationProject: unique("unique_notification_project").on(
+			table.notificationId,
+			table.projectId,
+		),
+	}),
+);
+
+export const notificationToProjectRelations = relations(
+	notificationToProject,
+	({ one }) => ({
+		notification: one(notifications, {
+			fields: [notificationToProject.notificationId],
+			references: [notifications.notificationId],
+		}),
+		project: one(projects, {
+			fields: [notificationToProject.projectId],
+			references: [projects.projectId],
+		}),
+	}),
+);
+
+export const notificationsRelations = relations(notifications, ({ one, many }) => ({
+	notificationToProjects: many(notificationToProject),
 	slack: one(slack, {
 		fields: [notifications.slackId],
 		references: [slack.slackId],
@@ -276,6 +314,7 @@ export const apiCreateSlack = notificationsSchema
 	.extend({
 		webhookUrl: z.string().min(1),
 		channel: z.string(),
+		projectIds: z.array(z.string()).optional().default([]),
 	})
 	.required();
 
@@ -283,6 +322,7 @@ export const apiUpdateSlack = apiCreateSlack.partial().extend({
 	notificationId: z.string().min(1),
 	slackId: z.string(),
 	organizationId: z.string().optional(),
+	projectIds: z.array(z.string()).optional(),
 });
 
 export const apiTestSlackConnection = apiCreateSlack.pick({
@@ -305,6 +345,7 @@ export const apiCreateTelegram = notificationsSchema
 		botToken: z.string().min(1),
 		chatId: z.string().min(1),
 		messageThreadId: z.string(),
+		projectIds: z.array(z.string()).optional().default([]),
 	})
 	.required();
 
@@ -312,6 +353,7 @@ export const apiUpdateTelegram = apiCreateTelegram.partial().extend({
 	notificationId: z.string().min(1),
 	telegramId: z.string().min(1),
 	organizationId: z.string().optional(),
+	projectIds: z.array(z.string()).optional(),
 });
 
 export const apiTestTelegramConnection = apiCreateTelegram.pick({
@@ -334,6 +376,7 @@ export const apiCreateDiscord = notificationsSchema
 	.extend({
 		webhookUrl: z.string().min(1),
 		decoration: z.boolean(),
+		projectIds: z.array(z.string()).optional().default([]),
 	})
 	.required();
 
@@ -341,6 +384,7 @@ export const apiUpdateDiscord = apiCreateDiscord.partial().extend({
 	notificationId: z.string().min(1),
 	discordId: z.string().min(1),
 	organizationId: z.string().optional(),
+	projectIds: z.array(z.string()).optional(),
 });
 
 export const apiTestDiscordConnection = apiCreateDiscord
@@ -369,6 +413,7 @@ export const apiCreateEmail = notificationsSchema
 		password: z.string().min(1),
 		fromAddress: z.string().min(1),
 		toAddresses: z.array(z.string()).min(1),
+		projectIds: z.array(z.string()).optional().default([]),
 	})
 	.required();
 
@@ -376,6 +421,7 @@ export const apiUpdateEmail = apiCreateEmail.partial().extend({
 	notificationId: z.string().min(1),
 	emailId: z.string().min(1),
 	organizationId: z.string().optional(),
+	projectIds: z.array(z.string()).optional(),
 });
 
 export const apiTestEmailConnection = apiCreateEmail.pick({
@@ -402,6 +448,7 @@ export const apiCreateResend = notificationsSchema
 		apiKey: z.string().min(1),
 		fromAddress: z.string().min(1),
 		toAddresses: z.array(z.string()).min(1),
+		projectIds: z.array(z.string()).optional().default([]),
 	})
 	.required();
 
@@ -409,6 +456,7 @@ export const apiUpdateResend = apiCreateResend.partial().extend({
 	notificationId: z.string().min(1),
 	resendId: z.string().min(1),
 	organizationId: z.string().optional(),
+	projectIds: z.array(z.string()).optional(),
 });
 
 export const apiTestResendConnection = apiCreateResend.pick({
@@ -432,6 +480,7 @@ export const apiCreateGotify = notificationsSchema
 		appToken: z.string().min(1),
 		priority: z.number().min(1),
 		decoration: z.boolean(),
+		projectIds: z.array(z.string()).optional().default([]),
 	})
 	.required();
 
@@ -439,6 +488,7 @@ export const apiUpdateGotify = apiCreateGotify.partial().extend({
 	notificationId: z.string().min(1),
 	gotifyId: z.string().min(1),
 	organizationId: z.string().optional(),
+	projectIds: z.array(z.string()).optional(),
 });
 
 export const apiTestGotifyConnection = apiCreateGotify
@@ -466,6 +516,7 @@ export const apiCreateNtfy = notificationsSchema
 		topic: z.string().min(1),
 		accessToken: z.string().optional(),
 		priority: z.number().min(1),
+		projectIds: z.array(z.string()).optional().default([]),
 	})
 	.required();
 
@@ -473,6 +524,7 @@ export const apiUpdateNtfy = apiCreateNtfy.partial().extend({
 	notificationId: z.string().min(1),
 	ntfyId: z.string().min(1),
 	organizationId: z.string().optional(),
+	projectIds: z.array(z.string()).optional(),
 });
 
 export const apiTestNtfyConnection = apiCreateNtfy.pick({
@@ -497,6 +549,7 @@ export const apiCreateMattermost = notificationsSchema
 		webhookUrl: z.string().url(),
 		channel: z.string().optional(),
 		username: z.string().optional(),
+		projectIds: z.array(z.string()).optional().default([]),
 	})
 	.required({
 		name: true,
@@ -514,6 +567,7 @@ export const apiUpdateMattermost = apiCreateMattermost.partial().extend({
 	notificationId: z.string().min(1),
 	mattermostId: z.string().min(1),
 	organizationId: z.string().optional(),
+	projectIds: z.array(z.string()).optional(),
 });
 
 export const apiTestMattermostConnection = apiCreateMattermost
@@ -545,12 +599,14 @@ export const apiCreateCustom = notificationsSchema
 	.extend({
 		endpoint: z.string().min(1),
 		headers: z.record(z.string(), z.string()).optional(),
+		projectIds: z.array(z.string()).optional().default([]),
 	});
 
 export const apiUpdateCustom = apiCreateCustom.partial().extend({
 	notificationId: z.string().min(1),
 	customId: z.string().min(1),
 	organizationId: z.string().optional(),
+	projectIds: z.array(z.string()).optional(),
 });
 
 export const apiTestCustomConnection = z.object({
@@ -571,6 +627,7 @@ export const apiCreateLark = notificationsSchema
 	})
 	.extend({
 		webhookUrl: z.string().min(1),
+		projectIds: z.array(z.string()).optional().default([]),
 	})
 	.required();
 
@@ -578,6 +635,7 @@ export const apiUpdateLark = apiCreateLark.partial().extend({
 	notificationId: z.string().min(1),
 	larkId: z.string().min(1),
 	organizationId: z.string().optional(),
+	projectIds: z.array(z.string()).optional(),
 });
 
 export const apiTestLarkConnection = apiCreateLark.pick({
@@ -597,6 +655,7 @@ export const apiCreateTeams = notificationsSchema
 	})
 	.extend({
 		webhookUrl: z.string().min(1),
+		projectIds: z.array(z.string()).optional().default([]),
 	})
 	.required();
 
@@ -604,6 +663,7 @@ export const apiUpdateTeams = apiCreateTeams.partial().extend({
 	notificationId: z.string().min(1),
 	teamsId: z.string().min(1),
 	organizationId: z.string().optional(),
+	projectIds: z.array(z.string()).optional(),
 });
 
 export const apiTestTeamsConnection = apiCreateTeams.pick({
@@ -627,6 +687,7 @@ export const apiCreatePushover = notificationsSchema
 		priority: z.number().min(-2).max(2).default(0),
 		retry: z.number().min(30).nullish(),
 		expire: z.number().min(1).max(10800).nullish(),
+		projectIds: z.array(z.string()).optional().default([]),
 	})
 	.refine(
 		(data) =>
@@ -654,6 +715,7 @@ export const apiUpdatePushover = z.object({
 	appDeploy: z.boolean().optional(),
 	dockerCleanup: z.boolean().optional(),
 	serverThreshold: z.boolean().optional(),
+	projectIds: z.array(z.string()).optional(),
 });
 
 export const apiTestPushoverConnection = z

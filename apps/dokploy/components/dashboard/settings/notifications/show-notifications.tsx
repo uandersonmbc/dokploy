@@ -1,4 +1,5 @@
-import { Bell, Loader2, Mail, PenBoxIcon, Trash2 } from "lucide-react";
+import { Bell, Globe, Loader2, Mail, PenBoxIcon, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
 	DiscordIcon,
@@ -129,7 +130,33 @@ export const ShowNotifications = () => {
 																</div>
 															)}
 
-															{notification.name}
+															<span className="flex flex-col gap-1">
+																<span>{notification.name}</span>
+																<span className="flex flex-row gap-1 flex-wrap">
+																	{notification.notificationToProjects
+																		.length === 0 ? (
+																		<Badge
+																			variant="secondary"
+																			className="text-xs font-normal"
+																		>
+																			<Globe className="size-3 mr-1" />
+																			All Projects
+																		</Badge>
+																	) : (
+																		notification.notificationToProjects.map(
+																			(ntp) => (
+																				<Badge
+																					key={ntp.projectId}
+																					variant="outline"
+																					className="text-xs font-normal"
+																				>
+																					{ntp.project.name}
+																				</Badge>
+																			),
+																		)
+																	)}
+																</span>
+															</span>
 														</span>
 														<div className="flex flex-row gap-1">
 															<HandleNotifications

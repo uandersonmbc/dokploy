@@ -52,6 +52,7 @@ export const runPostgresBackup = async (
 			databaseType: "postgres",
 			type: "success",
 			organizationId: project.organizationId,
+			projectId: project.projectId,
 			databaseName: backup.database,
 		});
 
@@ -65,6 +66,7 @@ export const runPostgresBackup = async (
 			// @ts-ignore
 			errorMessage: error?.message || "Error message not provided",
 			organizationId: project.organizationId,
+			projectId: project.projectId,
 			databaseName: backup.database,
 		});
 

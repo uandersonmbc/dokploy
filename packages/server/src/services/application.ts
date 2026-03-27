@@ -233,6 +233,7 @@ export const deployApplication = async ({
 			organizationId: application.environment.project.organizationId,
 			domains: application.domains,
 			environmentName: application.environment.name,
+			projectId: application.environment.project.projectId,
 		});
 	} catch (error) {
 		let command = "";
@@ -261,6 +262,7 @@ export const deployApplication = async ({
 			errorMessage: error?.message || "Error building",
 			buildLink,
 			organizationId: application.environment.project.organizationId,
+			projectId: application.environment.project.projectId,
 		});
 
 		throw error;
@@ -324,6 +326,7 @@ export const rebuildApplication = async ({
 			organizationId: application.environment.project.organizationId,
 			domains: application.domains,
 			environmentName: application.environment.name,
+			projectId: application.environment.project.projectId,
 		});
 	} catch (error) {
 		let command = "";
